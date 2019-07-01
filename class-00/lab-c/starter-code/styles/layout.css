@@ -1,0 +1,26 @@
+nav {
+  margin-top: 25px;
+}
+
+#logo img {
+  float: left;
+}
+
+nav ul {
+  float: right;
+}
+
+nav li {
+  float: left;
+  padding-right: 2px;
+}
+
+.date {
+  float: left;
+}
+.print img {
+  margin-right: 3px;
+}
+aside img {
+  float: left;
+}
