@@ -27,30 +27,19 @@ $.ajax({
 */
 
 // app.get('/location') is a route
+
 // app.get('/location', (request, response) => {
 //   searchToLatLng(request, response);
 // })
-  // response.send('hello world you are on the location path');
-  //console.log(request.query.data);
 
-    // response.send(locationData);
-
-    // app.get('/location', (request, response) => {
-    //   searchToLatLng(request, response);
-    // })
-    //this is where you are headed with tomorrows lab
-    app.get('/location', searchToLatLng);
+// This is the major refactor
+app.get('/location', searchToLatLng);
 
   
 
 app.use('*', (request, response) => {
   response.send('you got to the wrong place');
 })
-
-// function searchToLatLng(request, response){
-
-//   return 
-// }
 
 //gross callback function. Can we refactor?
 function searchToLatLng (request, response){
@@ -71,8 +60,6 @@ function searchToLatLng (request, response){
   response.status(500).send('Status 500: So sorry i broke');
 })
 }
-
-
 
 // Start the server
 app.listen(PORT, () => {
