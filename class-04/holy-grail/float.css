@@ -1,0 +1,25 @@
+main {
+  overflow: hidden;
+  height: calc(100vh - 140px);
+}
+
+main > * {
+  float: left;
+  height: 100%;
+}
+
+aside {
+  width: 20%;
+}
+
+main > section {
+  width: 60%;
+}
+
+aside:nth-child(3) > *{
+ height: 50%;
+}
+
+header, footer {
+  height: 70px;
+}

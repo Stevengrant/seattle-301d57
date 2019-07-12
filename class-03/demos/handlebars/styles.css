@@ -1,9 +1,57 @@
+
+
+#neighborhoods {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  flex-direction: column;
+
+}
+
+.textCenter{
+  height: 200px;
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  text-align: center;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+*{ 
+  box-sizing: border-box;
+}
 body {
   margin: 0;
   padding: 0;
   font-family: helvetica;
 }
-
 header {
   position: fixed;
   top: 0;
@@ -31,6 +79,7 @@ section div {
   margin-bottom: 20px;
   padding: 20px;
   border: solid 1px #444;
+  max-width: 25%;
 }
 
 p {
@@ -46,4 +95,8 @@ footer {
   background: #444;
   color: #fff;
   text-align: right;
+}
+
+#jquery-template{
+  display: none;
 }

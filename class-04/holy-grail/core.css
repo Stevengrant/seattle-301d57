@@ -1,0 +1,37 @@
+*{
+  box-sizing: border-box;
+}
+
+main {
+  background-color: #fafafa
+}
+
+main > * {
+  background-color: #301d5760
+}
+
+main > aside {
+  background-color: #31415960
+}
+header, footer {
+  background-color: red;
+}
+
+h1 {
+  font-size: 4em;
+}
+
+h2 {
+   font-size: 3em;
+}
+
+.center-text{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+section > p {
+  padding: 30px;
+}

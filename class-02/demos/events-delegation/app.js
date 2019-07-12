@@ -8,7 +8,7 @@ $('nav a').on('click', function() {
   console.log('$where to go', $whereToGo);
   $('.tab-content').hide();
   // we want $('#delegation')
-  $('#' + $whereToGo).fadeIn(750);
+  $('#' + $whereToGo).fadeIn(750); New;
 });
 
 // event logger

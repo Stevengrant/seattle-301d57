@@ -1,99 +1,69 @@
 'use strict';
 
-// application dependencies
-const express = require('express');
-const cors = require('cors');
-const superagent = require('superagent');
+// first run npm init from the terminal to create "package.json"
+// `npm install dotenv` installs the dotenv module into the node module folder
+// loads our environment from a secret .env file
 
-// configure environment variables
+// APP dependencies
 require('dotenv').config();
 
-const app = express();
+const express = require('express');
+const cors = require('cors');
 
+// Global vars
 const PORT = process.env.PORT;
 
+// Make my server
+const app = express();
 app.use(cors());
+const superagent = require('superagent');
 
-// Move the logic to the searchToLatLong function, below
-app.get('/location', searchToLatLong);
+/*
+$.ajax({
+    url: `localhost:3000/location`,
+    method: 'GET',
+    data: { data: searchQuery }
+  })
+*/
 
-app.get('/weather', getWeather);
+// app.get('/location') is a route
 
-app.listen(PORT, () => console.log(`Listening on ${PORT}`));
+// app.get('/location', (request, response) => {
+//   searchToLatLng(request, response);
+// })
 
+// This is the major refactor
+app.get('/location', searchToLatLng);
 
-// ERROR HANDLER
-function handleError(err, res) {
-  console.error(err);
-  if (res) res.status(500).send('Sorry, something went wrong');
+  
+
+app.use('*', (request, response) => {
+  response.send('you got to the wrong place');
+})
+
+//gross callback function. Can we refactor?
+function searchToLatLng (request, response){
+  const locationName = request.query.data;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${locationName}&key=${process.env.GEOCODE_API_KEY}`;
+   superagent.get(url)
+    .then( result => {
+      let location = {
+    search_query: locationName,
+    formatted_query: result.body.results[0].formatted_address,
+    latitude: result.body.results[0].geometry.location.lat,
+    longitude: result.body.results[0].geometry.location.lng,
+  }
+  response.send(location);
+
+}).catch(e => {
+  console.error(e);
+  response.status(500).send('Status 500: So sorry i broke');
+})
 }
 
-
-// HELPER FUNCTIONS
-
-// Solution from day 6
-// function searchToLatLong(query) {
-//   const geoData = require('./data/geo.json');
-//   const location = new Location(geoData);
-//   location.search_query = query;
-//   console.log(location);
-//   return location;
-// }
-
-function searchToLatLong(request, response) {
-  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${request.query.data}&key=${process.env.GEOCODE_API_KEY}`;
-
-  return superagent.get(url)
-    .then(res => {
-      response.send( new Location(request.query.data, res));
-    })
-    .catch(error => handleError(error));
-
-}
-
-// Start with this, then refactor the .forEach to .map
-// function getWeather(request, response) {
-//   const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${request.query.data.latitude},${request.query.data.longitude}`;
-//   console.log('url', url);
-
-//   return superagent.get(url)
-//     .then(result => {
-//       const weatherSummaries = [];
-
-//       result.body.daily.data.forEach(day => {
-//         const summary = new Weather(day);
-
-//         weatherSummaries.push(summary);
-//       });
-
-//       response.send(weatherSummaries);
-//     })
-//     .catch(error => handleError(error, response));
-// }
-
-function getWeather(request, response) {
-  const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${request.query.data.latitude},${request.query.data.longitude}`;
-
-  return superagent.get(url)
-    .then(result => {
-      const weatherSummaries = result.body.daily.data.map(day => {
-        return new Weather(day);
-      });
-
-      response.send(weatherSummaries);
-    })
-    .catch(error => handleError(error, response));
-}
-
-function Location(query, res) {
-  this.search_query = query;
-  this.formatted_query = res.body.results[0].formatted_address;
-  this.latitude = res.body.results[0].geometry.location.lat;
-  this.longitude = res.body.results[0].geometry.location.lng;
-}
+// Start the server
+app.listen(PORT, () => {
+  console.log(`app is up on port ${PORT}`)
+})
 
 
-function Weather(day) {
-  this.forecast = day.summary;
-  this.time = new Date(day.time * 1000).toString().slice(0, 15);
-}

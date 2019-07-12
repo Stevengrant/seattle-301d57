@@ -6,18 +6,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="styles.css">
 
-    <script id="neighborhood-template" type="text/x-handlebars-template">
+    
+  </head>
+  <body>
+    <script id="ginger-template" type="text/x-handlebars-template">
       <div>
-        <h2>{{name}}</h2>
-        <p>Part of: {{city}}</p>
-        <p>Current population: {{population}}</p>
-        <p>Founded on: {{founded}}</p>
-        {{{body}}}
+          <h2>{{name}}</h2>
+          <p>{{hobbies}}</p>
+          <img src="{{image_url}}">
+        </div>
+    </script>
+
+    <script id="entry-template" type="text/x-handlebars-template">
+      <div class="entry">
+        <h1>{{title}}</h1>
+        <div class="body">
+          {{body}}
+        </div>
       </div>
     </script>
 
-  </head>
-  <body>
+    <script id="neighborhood-template" type="text/x-handlebars-template">
+        <div class="{{city}}">
+        Build with Handlebars
+
+          <h2 alt="{{city}}">{{name}}</h2>
+          <p class="textCenter">Lives in {{city}}</p>
+          <p class="textCenter">Founded in{{founded}}</p>
+          <p class="textCenter">{{{body}}}</p>
+      
+        </div>
+    </script>
+
     <header>
       <section>
         <h1>Neighborhood Stats</h1>
@@ -25,7 +45,34 @@
     </header>
 
     <main>
-      <section id="neighborhoods"></section>
+      <section id="dogs">
+        <div>
+          <h2>Ginger</h2>
+          <p>I do chewing</p>
+          <img src="ginger.jpeg">
+        </div>
+        
+      </section>
+
+
+      <section id="neighborhoods">
+        <div id="jquery-template">
+          <h2></h2>
+          <p class="textCenter"></p>
+          <p class="textCenter"></p>
+          <p class="textCenter"></p>
+          
+        </div>
+        <!-- <div>
+          Build with Handlebars
+        
+          <h2>{{name}}</h2>
+          <p class="textCenter">Lives in {{city}}</p>
+          <p class="textCenter">Founded in{{founded}}</p>
+          <p class="textCenter">{{{body}}}</p>
+        
+        </div> -->
+      </section>
     </main>
 
     <footer>
@@ -33,8 +80,9 @@
     </footer>
 
     <script src="https://code.jquery.com/jquery-3.2.1.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.10/handlebars.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.1.2/handlebars.min.js"></script>
     <script src="scripts/dataSet.js"></script>
     <script src="scripts/neighborhood.js"></script>
+    <!-- <script src="scripts/app.js"></script> -->
   </body>
 </html>

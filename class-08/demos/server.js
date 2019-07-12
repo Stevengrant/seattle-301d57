@@ -1,190 +1,124 @@
 'use strict';
 
-// Application Dependencies
+// ===== APP dependencies =====
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const superagent = require('superagent');
 const pg = require('pg');
 
-// Load Environment from .env file
-require('dotenv').config();
-
-// Application Setup
+// ===== Global vars =====
 const PORT = process.env.PORT;
+// postgres://ncarignan:password@localhost:5432/city_explorer
+// TODO: deploy to heroku
+// add db to heroku
+// heroku pg:push <name of your db> DATABASE_URL
 const client = new pg.Client(process.env.DATABASE_URL);
 client.connect();
-client.on('err', err => console.log(err));
+client.on('error',
+  error => {
+    console.error(error);
+  })
 
+
+// ===== server instantiation and load middleware =====
 const app = express();
-
 app.use(cors());
 
-// Route Handlers
-app.get('/location', getLocation);
+// ===== Routes =====
+app.get('/location', searchToLatLng);
 app.get('/weather', getWeather);
 
-// Errors!
-function handleError(err, res) {
-  console.error('ERR', err);
-  if (res) res.status(500).send('Sorry, something went wrong');
+
+app.use('*', (request, response) => {
+  response.send('you got to the wrong place');
+})
+
+// ===== Server Start =====
+app.listen(PORT, () => {
+  console.log(`app is up on port ${PORT}`)
+})
+
+// ===== Constructors and Helper Functions =====
+
+function Location(locationName, result){
+  this.search_query = locationName;
+  this.formatted_query = result.body.results[0].formatted_address;
+  this.latitude = result.body.results[0].geometry.location.lat;
+  this.longitude = result.body.results[0].geometry.location.lng;
 }
 
-// Start the server up on a given port
-app.listen(PORT, () => console.log(`App is up on ${PORT}`) );
-
-// Helper functions and handlers
-
-// ---------- LOCATION ------------- //
-
-// Route Handler
-function getLocation(request,response) {
-
-  const locationHandler = {
-
-    query: request.query.data,
-
-    cacheHit: (results) => {
-      console.log('Got data from SQL');
-      response.send(results.rows[0]);
-    },
-
-    cacheMiss: () => {
-      Location.fetchLocation(request.query.data)
-        .then(data => response.send(data));
-    },
-  };
-
-  Location.lookupLocation(locationHandler);
-
-}
-
-// Constructor / Normalizer
-function Location(query, data) {
-  this.search_query = query;
-  this.formatted_query = data.formatted_address;
-  this.latitude = data.geometry.location.lat;
-  this.longitude = data.geometry.location.lng;
-}
-
-// Instance Method: Save a location to the DB
-Location.prototype.save = function() {
-  let SQL = `
-    INSERT INTO locations
-      (search_query,formatted_query,latitude,longitude) 
-      VALUES($1,$2,$3,$4) 
-      RETURNING id
-  `;
-  let values = Object.values(this);
-  return client.query(SQL,values);
-};
-
-// Static Method: Fetch a location from google
-Location.fetchLocation = (query) => {
-  const _URL = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${process.env.GEOCODE_API_KEY}`;
-  return superagent.get(_URL)
-    .then( data => {
-      console.log('Got data from API');
-      if ( ! data.body.results.length ) { throw 'No Data'; }
-      else {
-        // Create an instance and save it
-        let location = new Location(query, data.body.results[0]);
-        return location.save()
-          .then( result => {
-            location.id = result.rows[0].id;
-            return location;
-          });
-        return location;
-      }
-    });
-};
-
-// Static Method: Lookup a location in the DB and invoke the proper callback methods based on what you find
-Location.lookupLocation = (handler) => {
-
-  const SQL = `SELECT * FROM locations WHERE search_query=$1`;
-  const values = [handler.query];
-
-  return client.query( SQL, values )
-    .then( results => {
-      if( results.rowCount > 0 ) {
-        handler.cacheHit(results);
-      }
-      else {
-        handler.cacheMiss();
-      }
-    })
-    .catch( console.error );
-
-};
-
-// ---------- WEATHER ------------- //
-
-// Route Handler
-function getWeather(request, response) {
-
-  const handler = {
-
-    location: request.query.data,
-
-    cacheHit: function(result) {
-      response.send(result.rows);
-    },
-
-    cacheMiss: function() {
-      Weather.fetch(request.query.data)
-        .then( results => response.send(results) )
-        .catch( console.error );
-    },
-  };
-
-  Weather.lookup(handler);
-
-}
-
-// Weather Constructor/Normalizer
 function Weather(day) {
   this.forecast = day.summary;
   this.time = new Date(day.time * 1000).toString().slice(0, 15);
 }
 
-// Instance Method: Save a location to the DB
-Weather.prototype.save = function(id) {
-  const SQL = `INSERT INTO weathers (forecast, time, location_id) VALUES ($1, $2, $3);`;
-  const values = Object.values(this);
-  values.push(id);
-  client.query(SQL, values);
-};
+function searchToLatLng(request, response) {
 
-// Static Method: Lookup a location in the DB and invoke the proper callback methods based on what you find
-// Question -- is anything in here other than the table name esoteric to weather? Is there an opportunity to DRY this out?
-Weather.lookup = function(handler) {
-  const SQL = `SELECT * FROM weathers WHERE location_id=$1;`;
-  client.query(SQL, [handler.location.id])
-    .then(result => {
-      if(result.rowCount > 0) {
-        console.log('Got data from SQL');
-        handler.cacheHit(result);
+  const locationName = request.query.data;
+  const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${locationName}&key=${process.env.GEOCODE_API_KEY}`;
+
+  // if is in database
+  // go get it from db
+  client.query(`SELECT * FROM locations WHERE search_query=$1`, [locationName])
+    .then(sqlResult => {
+
+      if(sqlResult.rowCount === 0){
+        console.log('getting new data from googles');
+        superagent.get(url)
+          .then(result => {
+
+            let location = new Location(locationName, result)
+
+            // Save the data to postgres
+            // client.query takes two arguments: a sql command, and an array ov values
+            client.query(
+              `INSERT INTO locations (
+          search_query,
+          formatted_query,
+          latitude,
+          longitude
+        ) VALUES ($1, $2, $3, $4)`,
+              [location.search_query, location.formatted_query, location.latitude, location.longitude]
+            )
+
+            response.send(location);
+
+          }).catch(e => {
+            console.error(e);
+            response.status(500).send('Status 500: So sorry i broke');
+          })
       } else {
-        console.log('Got data from API');
-        handler.cacheMiss();
+        console.log('sending from db');
+        // send the frontend what was in the db
+        response.send(sqlResult.rows[0]);
       }
-    })
-    .catch(error => handleError(error));
-};
-
-// Static Method: Fetch a location from the weather API
-Weather.fetch = function(location) {
-  const url = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${location.latitude},${location.longitude}`;
-
-  return superagent.get(url)
-    .then(result => {
-      const weatherSummaries = result.body.daily.data.map(day => {
-        const summary = new Weather(day);
-        summary.save(location.id);
-        return summary;
-      });
-      return weatherSummaries;
     });
-};
+
+  // else do everything normal
 
 
+}
+
+function getWeather(request, response) {
+
+  const _URL = `https://api.darksky.net/forecast/${process.env.WEATHER_API_KEY}/${request.query.data.latitude},${request.query.data.longitude}`;
+
+  return superagent.get(_URL)
+    .then(result => {
+
+      const weatherSummaries = [];
+
+      result.body.daily.data.forEach(day => {
+        const summary = new Weather(day);
+        weatherSummaries.push(summary);
+      });
+
+      response.send(weatherSummaries);
+
+    })
+    .catch(e => {
+      console.error(e);
+      response.status(500).send('Status 500: So sorry i broke');
+    });
+}
